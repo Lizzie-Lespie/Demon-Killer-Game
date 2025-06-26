@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Demon Killer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>😈</text></svg>">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Uncomment the following meta tag if you experience Content Security Policy (CSP) errors on deployment.
+     This policy allows resources from the same origin, inline scripts/styles, and common CDNs. -->
+<!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' data: https://placehold.co; connect-src 'self' https://placehold.co;"> -->
+<style>
+    body {
+        background-color: black;
+        color: white;
+        font-family: 'Inter', Arial, sans-serif; /* Using Inter font */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+        border: 5px solid red; /* Red border for the game area */
+        box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    }
+
+    #game-container {
+        padding: 20px;
+        text-align: center;
+        max-width: 800px; /* Limit game container width */
+        width: 100%;
+        border-radius: 10px; /* Rounded corners for the main container */
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); /* Subtle red glow */
+    }
+
+    .health-bar-container {
+        width: 100%; /* Make health bar responsive */
+        max-width: 150px; /* Max width for health bar */
+        height: 20px;
+        background-color: #333;
+        border: 1px solid #555;
+        margin: 5px auto;
+        border-radius: 5px; /* Rounded corners for health bar container */
+        overflow: hidden; /* Hide overflow for health bar */
+    }
+
+    .health-bar {
+        height: 100%;
+        background-color: limegreen;
+        width: 100%; /* Start at full health */
+        border-radius: 5px; /* Rounded corners for health bar fill */
+        transition: width 0.3s ease-in-out; /* Smooth health bar transitions */
+    }
+
+    .character {
+        font-size: 5em; /* Large emojis */
+        margin: 10px;
+        user-select: none; /* Prevent text selection */
+    }
+
+    .stats {
+        display: flex;
+        flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        justify-content: space-around;
+        align-items: flex-start; /* Align items to the top */
+        margin-bottom: 20px;
+        width: 100%;
+    }
+
+    .player-section, .demon-section, .dragon-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 10px 20px; /* Adjust margin for spacing */
+        flex: 1; /* Allow sections to grow and shrink */
+        min-width: 200px; /* Minimum width for each section */
+    }
+
+    #actions button {
+        background: linear-gradient(145deg, #4CAF50, #45a049); /* Gradient background */
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px; /* More rounded corners */
+        cursor: pointer;
+        font-size: 1.3em;
+        margin: 8px;
+        transition: all 0.3s ease; /* Smooth transitions for hover effects */
+        box-shadow: 0 4px 10px rgba(0, 255, 0, 0.3); /* Green shadow */
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        border: 1px solid #3e8e41;
+    }
+
+    #actions button:hover {
+        background: linear-gradient(145deg, #45a049, #4CAF50);
+        transform: translateY(-2px); /* Slight lift on hover */
+        box-shadow: 0 6px 15px rgba(0, 255, 0, 0.5);
+    }
+
+    #actions button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 5px rgba(0, 255, 0, 0.2);
+    }
+
+    #message {
+        margin-top: 20px;
+        font-size: 1.2em;
+        min-height: 30px; /* Reserve space for messages */
+        font-style: italic;
+        color: #ffcc00; /* Yellowish color for messages */
+    }
+
+    #game-over-screen {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: fixed; /* Use fixed for full overlay */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 1000; /* High z-index to be on top */
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    #game-over-screen h2 {
+        color: red;
+        font-size: 4em; /* Larger game over text */
+        text-shadow: 0 0 15px red; /* Glow effect */
+        animation: pulse 1.5s infinite alternate;
+    }
+
+    #game-over-screen button {
+        background: linear-gradient(145deg, #008CBA, #007bb5); /* Blue gradient */
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1.5em;
+        margin-top: 30px;
+        box-shadow: 0 5px 15px rgba(0, 140, 186, 0.4);
+        transition: all 0.3s ease;
+        border: 1px solid #007bb5;
+    }
+
+    #game-over-screen button:hover {
+        background: linear-gradient(145deg, #007bb5, #008CBA);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 140, 186, 0.6);
+    }
+
+    #options {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    #options button {
+        background: linear-gradient(145deg, #f44336, #da190b); /* Red gradient */
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.1em;
+        margin: 5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(244, 67, 54, 0.3);
+        border: 1px solid #da190b;
+    }
+
+    #options button:hover {
+        background: linear-gradient(145deg, #da190b, #f44336);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(244, 67, 54, 0.5);
+    }
+
+    #dragon-egg {
+        position: absolute;
+        bottom: 10px;
+        right: 0px; /* Start slightly off-screen */
+        width: 60px; /* Slightly larger clickable area */
+        height: 60px;
+        overflow: hidden; /* Hide most of the image */
+        display: none; /* Hidden until level 10 */
+        cursor: pointer;
+        border-radius: 50%; /* Make it circular if the image allows */
+        box-shadow: 0 0 15px rgba(255, 255, 0, 0.7); /* Yellow glow for egg */
+        transition: all 0.3s ease;
+    }
+
+    #dragon-egg:hover {
+        transform: scale(1.1); /* Slight zoom on hover */
+        box-shadow: 0 0 25px rgba(255, 255, 0, 1);
+    }
+
+    #dragon-egg img {
+        width: 200px; /* Make the image larger than the div */
+        height: 200px;
+        position: relative;
+        left: -140px; /* Position to show only a sliver */
+        top: -140px; /* Position to show only a sliver */
+        object-fit: cover; /* Ensure image covers the area */
+    }
+
+    .modal-container {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-content {
+        background-color: #222;
+        border: 2px solid red;
+        padding: 25px;
+        border-radius: 12px;
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 0 25px rgba(255, 0, 0, 0.7);
+        position: relative;
+    }
+
+    .modal-content h2 {
+        color: #ffcc00;
+        margin-bottom: 20px;
+        font-size: 2em;
+    }
+
+    .modal-content p {
+        margin-bottom: 15px;
+        font-size: 1.1em;
+    }
+
+    .modal-items button {
+        display: block;
+        width: 90%;
+        margin: 10px auto;
+        background: linear-gradient(145deg, #555, #444);
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.1em;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    }
+
+    .modal-items button:hover:not(:disabled) {
+        background: linear-gradient(145deg, #777, #666);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 12px rgba(0,0,0,0.5);
+    }
+
+    .modal-items button:disabled {
+        background-color: #333;
+        color: #888;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .modal-close-button {
+        background: linear-gradient(145deg, #f44336, #da190b);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1.2em;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(244, 67, 54, 0.3);
+    }
+
+    .modal-close-button:hover {
+        background: linear-gradient(145deg, #da190b, #f44336);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(244, 67, 54, 0.5);
+    }
+
+    /* Keyframe animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .stats {
+            flex-direction: column; /* Stack sections vertically */
+            align-items: center;
+        }
+
+        .player-section, .demon-section, .dragon-section {
+            margin: 15px 0;
+            width: 100%;
+        }
+
+        .character {
+            font-size: 4em;
+        }
+
+        #actions button {
+            width: 90%; /* Make buttons full width */
+            margin: 8px auto;
+        }
+
+        #options button {
+            width: 90%;
+            margin: 5px auto;
+        }
+
+        .modal-content {
+            padding: 15px;
+        }
+
+        .modal-content h2 {
+            font-size: 1.8em;
+        }
+
+        .modal-items button {
+            width: 95%;
+        }
+    }
+</style>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>Demon Killer</h1>
+
+    <div class="stats">
+        <div class="player-section">
+            <div class="character" id="player-emoji">⭐</div>
+            <p>Your Health: <span id="player-health-text">100</span></p>
+            <div class="health-bar-container"><div class="health-bar" id="player-health-bar"></div></div>
+            <p>Current Sword: <span id="current-sword-name">Basic Sword</span></p>
+            <p>Coins: <span id="coins">0</span></p>
+            <p>Level: <span id="level">0</span></p>
+        </div>
+
+        <div class="demon-section">
+            <div class="character" id="demon-emoji">😈</div>
+            <p>Demon Health: <span id="demon-health-text"></span></p>
+            <div class="health-bar-container"><div class="health-bar" id="demon-health-bar"></div></div>
+        </div>
+
+        <div class="dragon-section" id="dragon-stats" style="display:none;">
+            <div class="character">🐉</div>
+            <p>Diamond's Health: <span id="dragon-health-text">100</span></p>
+            <div class="health-bar-container"><div class="health-bar" id="dragon-health-bar"></div></div>
+        </div>
+    </div>
+
+    <div id="actions">
+        <button onclick="playerAttack()">Attack</button>
+        <button onclick="playerHeal()">Heal</button>
+        <button onclick="openShop()">Shop</button>
+        <button onclick="openInventory()">Inventory</button>
+    </div>
+
+    <p id="message"></p>
+
+    <div id="options">
+        <button onclick="toggleInfiniteMode()">Toggle Infinite Mode (Off)</button>
+        <button onclick="toggleGodMode()">Toggle God Mode (Off)</button>
+    </div>
+
+    <div id="dragon-egg">
+        <!-- Placeholder image for dragon egg. Replace with a real URL! -->
+        <img src="https://placehold.co/200x200/555555/FFFFFF?text=Dragon+Egg" alt="Dragon Egg" onerror="this.src='https://placehold.co/200x200/555555/FFFFFF?text=Egg+Error';">
+    </div>
+</div>
+
+<!-- Game Over Screen -->
+<div id="game-over-screen">
+    <h2 id="game-over-message">GAME OVER!</h2>
+    <button onclick="restartGame()">Restart</button>
+</div>
+
+<!-- Shop Modal -->
+<div id="shop-container" class="modal-container">
+    <div class="modal-content">
+        <h2>Shop</h2>
+        <p>Your Coins: <span id="shop-coins">0</span></p>
+        <div id="shop-items" class="modal-items">
+            <!-- Shop items will be generated here by JavaScript -->
+        </div>
+        <button class="modal-close-button" onclick="closeShop()">Close Shop</button>
+    </div>
+</div>
+
+<!-- Inventory Modal -->
+<div id="inventory-container" class="modal-container">
+    <div class="modal-content">
+        <h2>Inventory</h2>
+        <p>Current Sword: <span id="inventory-current-sword">Basic Sword</span></p>
+        <div id="inventory-items" class="modal-items">
+            <!-- Inventory items will be generated here by JavaScript -->
+        </div>
+        <button class="modal-close-button" onclick="closeInventory()">Close Inventory</button>
+    </div>
+</div>
+
+<script>
+    // Game state variables
+    let playerHealth = 100;
+    let maxPlayerHealth = 100;
+    let demonHealth; // Initialized by generateDemonStats()
+    let maxDemonHealth; // Initialized by generateDemonStats()
+    let playerDamage = 0.5; // Basic sword damage
+    let demonDamage; // Initialized by generateDemonStats()
+    let healingAmount = 15;
+    let level = 0;
+    let coins = 0;
+
+    let infiniteMode = false;
+    let godMode = false;
+
+    let dragonHatched = false;
+    let dragonHealth = 100;
+    let maxDragonHealth = 100;
+    let dragonDamage = 5; // Diamond's attack
+    let dragonDamageBoostActive = false; // Flag for temporary player damage boost
+
+    // Define all swords and their properties
+    const swords = {
+        "Basic Sword": { damage: 0.5, cost: 0 },
+        "Reenforced Sword": { damage: 1.5, cost: 25 },
+        "Golden Sword": { damage: 2, cost: 50 },
+        "Winged Sword": { damage: 3, cost: 75 },
+        "Awesome Sword": { damage: 5, cost: 100 },
+        "Lightsaber": { damage: 10, cost: 150 },
+        "Hecking Sword": { damage: 8, cost: 85 },
+        "Blessed Sword": { damage: 25, cost: 500 }
+    };
+    // Player starts with Basic Sword and owns it
+    let ownedSwords = { "Basic Sword": true };
+    let currentSword = "Basic Sword"; // Currently equipped sword
+
+    // Get HTML elements by their IDs
+    const playerHealthBar = document.getElementById('player-health-bar');
+    const playerHealthText = document.getElementById('player-health-text');
+    const demonHealthBar = document.getElementById('demon-health-bar');
+    const demonHealthText = document.getElementById('demon-health-text');
+    const messageDisplay = document.getElementById('message');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const gameOverMessage = document.getElementById('game-over-message');
+    const infiniteModeButton = document.querySelector('#options button:nth-child(1)');
+    const godModeButton = document.querySelector('#options button:nth-child(2)');
+    const coinsDisplay = document.getElementById('coins');
+    const levelDisplay = document.getElementById('level');
+    const dragonEgg = document.getElementById('dragon-egg');
+    const dragonStats = document.getElementById('dragon-stats');
+    const dragonHealthBar = document.getElementById('dragon-health-bar');
+    const dragonHealthText = document.getElementById('dragon-health-text');
+    const shopContainer = document.getElementById('shop-container');
+    const shopCoinsDisplay = document.getElementById('shop-coins');
+    const shopItemsContainer = document.getElementById('shop-items');
+    const currentSwordNameDisplay = document.getElementById('current-sword-name');
+    const inventoryContainer = document.getElementById('inventory-container');
+    const inventoryItemsContainer = document.getElementById('inventory-items');
+    const inventoryCurrentSwordDisplay = document.getElementById('inventory-current-sword');
+
+    /**
+     * Generates random health and damage for the demon based on current level.
+     * Demon health: 10-25 + (level * 5)
+     * Demon damage: 1-5 + (level * 0.5)
+     */
+    function generateDemonStats() {
+        // Base health: random between 10 and 25
+        const baseHealth = Math.floor(Math.random() * (25 - 10 + 1)) + 10;
+        maxDemonHealth = baseHealth + (level * 5); // Health scales with level
+        demonHealth = maxDemonHealth;
+
+        // Base damage: random between 1 and 5
+        const baseDamage = Math.floor(Math.random() * (5 - 1 + 1)) + 1;
+        demonDamage = baseDamage + (level * 0.5); // Damage scales with level
+        // Ensure damage is at least 1, even at level 0 with low random base damage.
+        demonDamage = Math.max(1, demonDamage);
+    }
+
+    /**
+     * Updates the visual representation of player, demon, and dragon health bars.
+     */
+    function updateHealthBars() {
+        playerHealthBar.style.width = (playerHealth / maxPlayerHealth) * 100 + '%';
+        playerHealthText.textContent = playerHealth;
+        demonHealthBar.style.width = (demonHealth / maxDemonHealth) * 100 + '%';
+        demonHealthText.textContent = Math.round(demonHealth); // Round demon health for display
+
+        // Only update dragon's health if it's hatched
+        if (dragonHatched) {
+            dragonHealthBar.style.width = (dragonHealth / maxDragonHealth) * 100 + '%';
+            dragonHealthText.textContent = dragonHealth;
+        }
+    }
+
+    /**
+     * Updates the displayed coin count.
+     */
+    function updateCoinsDisplay() {
+        coinsDisplay.textContent = coins;
+        shopCoinsDisplay.textContent = coins; // Update shop's coin display as well
+    }
+
+    /**
+     * Updates the displayed current level.
+     */
+    function updateLevelDisplay() {
+        levelDisplay.textContent = level;
+    }
+
+    /**
+     * Displays a message to the user in the message area.
+     * @param {string} msg - The message to display.
+     */
+    function displayMessage(msg) {
+        messageDisplay.textContent = msg;
+    }
+
+    /**
+     * Handles the player's attack action.
+     */
+    function playerAttack() {
+        // Prevent action if player is defeated and not in god mode
+        if (playerHealth <= 0 && !godMode) {
+            displayMessage("You are defeated! Restart the game.");
+            return;
+        }
+
+        let damageDealt = swords[currentSword].damage; // Get damage from current sword
+        if (godMode) {
+            damageDealt *= 3; // Triple damage in god mode
+        }
+        if (dragonDamageBoostActive) {
+            damageDealt *= 2; // Apply dragon's damage boost
+            dragonDamageBoostActive = false; // Boost only lasts for one turn
+            displayMessage("Dragon's booster is active! You strike harder!");
+        }
+
+        demonHealth -= damageDealt;
+        demonHealth = Math.max(0, demonHealth); // Health cannot go below 0
+        displayMessage(`You attacked the demon for ${damageDealt.toFixed(1)} damage!`);
+
+        // Check if demon is defeated
+        if (demonHealth <= 0) {
+            demonHealth = 0; // Ensure health shows 0
+            updateHealthBars();
+            levelUp(); // Advance to next level
+        } else {
+            // If demon is not defeated, it's the demon's turn
+            demonTurn();
+        }
+        updateHealthBars(); // Update health bars after action
+    }
+
+    /**
+     * Handles the player's heal action.
+     */
+    function playerHeal() {
+        // Prevent action if player is defeated and not in god mode
+        if (playerHealth <= 0 && !godMode) {
+            displayMessage("You are defeated! Restart the game.");
+            return;
+        }
+
+        playerHealth += healingAmount;
+        playerHealth = Math.min(maxPlayerHealth, playerHealth); // Health cannot exceed max health
+        displayMessage(`You healed for ${healingAmount} health.`);
+        updateHealthBars(); // Update health bar after healing
+        demonTurn(); // Demon's turn after player heals
+    }
+
+    /**
+     * Handles the demon's turn (attack).
+     */
+    function demonTurn() {
+        if (demonHealth <= 0) return; // If demon is already defeated, do nothing
+
+        let damageTaken = demonDamage;
+        if (godMode) {
+            damageTaken = 0; // No damage in god mode
+        }
+
+        // If dragon is hatched and alive, it takes damage first
+        if (dragonHatched && dragonHealth > 0) {
+            let dragonDamageAbsorbed = Math.min(dragonHealth, damageTaken); // Dragon absorbs up to its health
+            dragonHealth -= dragonDamageAbsorbed;
+            dragonHealth = Math.max(0, dragonHealth); // Dragon health cannot go below 0
+            damageTaken -= dragonDamageAbsorbed; // Reduce damage taken by player
+
+            if (dragonDamageAbsorbed > 0) {
+                displayMessage(`The demon attacked! Diamond took ${dragonDamageAbsorbed} damage.`);
+            }
+
+            // If Diamond is defeated
+            if (dragonHealth <= 0) {
+                dragonHealth = 0;
+                displayMessage("Diamond is defeated! She instantly heals your health and grants a damage boost for this turn!");
+                playerHealth = maxPlayerHealth; // Full heal for player
+                dragonDamageBoostActive = true; // Activate player damage boost
+                // Diamond will respawn for the next level, so no need to reset health here.
+            }
+        }
+
+        // Apply remaining damage to player
+        playerHealth -= damageTaken;
+        playerHealth = Math.max(0, playerHealth); // Player health cannot go below 0
+
+        if (damageTaken > 0) {
+            displayMessage(`The demon attacked you for ${damageTaken.toFixed(1)} damage!`);
+        } else if (godMode) {
+            displayMessage("The demon attacked, but you took no damage in God Mode!");
+        }
+
+        // Check if player is defeated (and not in god mode)
+        if (playerHealth <= 0 && !godMode) {
+            playerHealth = 0; // Ensure health shows 0
+            updateHealthBars();
+            gameOver("GAME OVER!"); // Trigger game over screen
+        }
+        updateHealthBars(); // Update health bars after demon's action
+    }
+
+    /**
+     * Advances the game to the next level.
+     */
+    function levelUp() {
+        level++; // Increment level
+        coins += 5; // Earn 5 coins
+        displayMessage(`Demon defeated! You reached Level ${level} and earned 5 coins!`);
+        updateCoinsDisplay();
+        updateLevelDisplay();
+
+        // Regenerate demon stats for the new level
+        generateDemonStats();
+
+        // Reset player health if not in infinite mode
+        if (!infiniteMode) {
+            playerHealth = maxPlayerHealth;
+        }
+        // If in infinite mode and player died, their health state is preserved from last turn.
+        // If they didn't die, they keep their current health.
+
+        // Check for dragon egg appearance
+        if (level >= 10 && !dragonHatched) {
+            dragonEgg.style.display = 'block';
+            displayMessage("A mysterious dragon egg appeared in the corner! Click it!");
+        } else if (dragonHatched) {
+            // If dragon was already hatched and possibly defeated, respawn it for the new level
+            dragonHealth = maxDragonHealth;
+            dragonStats.style.display = 'flex'; // Ensure dragon stats are visible
+        }
+
+        updateHealthBars(); // Update health bars for the new level
+    }
+
+    /**
+     * Displays the game over screen.
+     * @param {string} message - The message to display on the game over screen.
+     */
+    function gameOver(message) {
+        gameOverMessage.textContent = message;
+        gameOverScreen.style.display = 'flex'; // Show game over screen
+        // Disable game actions buttons
+        document.getElementById('actions').style.pointerEvents = 'none';
+        document.getElementById('options').style.pointerEvents = 'none';
+    }
+
+    /**
+     * Resets all game state variables and restarts the game.
+     */
+    function restartGame() {
+        // Reset game state
+        playerHealth = 100;
+        maxPlayerHealth = 100;
+        level = 0; // Reset level to 0
+        coins = 0;
+        infiniteMode = false;
+        godMode = false;
+        dragonHatched = false;
+        dragonHealth = 100;
+        maxDragonHealth = 100;
+        dragonDamageBoostActive = false;
+        currentSword = "Basic Sword";
+        ownedSwords = { "Basic Sword": true }; // Reset owned swords to only basic
+
+        // Generate initial demon stats for the new game
+        generateDemonStats();
+
+        // Reset UI elements and displays
+        updateHealthBars();
+        updateCoinsDisplay();
+        updateLevelDisplay();
+        displayMessage("Welcome to Demon Killer! Attack or Heal to start your adventure.");
+        gameOverScreen.style.display = 'none'; // Hide game over screen
+        document.getElementById('actions').style.pointerEvents = 'auto'; // Re-enable actions
+        document.getElementById('options').style.pointerEvents = 'auto'; // Re-enable options
+        infiniteModeButton.textContent = "Toggle Infinite Mode (Off)";
+        godModeButton.textContent = "Toggle God Mode (Off)";
+        dragonEgg.style.display = 'none'; // Hide dragon egg
+        dragonStats.style.display = 'none'; // Hide dragon stats
+        currentSwordNameDisplay.textContent = "Basic Sword"; // Update displayed sword
+        updateShop(); // Re-render shop in case swords were bought
+        updateInventory(); // Re-render inventory
+    }
+
+    /**
+     * Toggles Infinite Mode on/off.
+     */
+    function toggleInfiniteMode() {
+        infiniteMode = !infiniteMode;
+        infiniteModeButton.textContent = `Toggle Infinite Mode (${infiniteMode ? 'On' : 'Off'})`;
+        displayMessage(`Infinite Mode is now ${infiniteMode ? 'ON' : 'OFF'}.`);
+    }
+
+    /**
+     * Toggles God Mode on/off.
+     */
+    function toggleGodMode() {
+        godMode = !godMode;
+        godModeButton.textContent = `Toggle God Mode (${godMode ? 'On' : 'Off'})`;
+        displayMessage(`God Mode is now ${godMode ? 'ON' : 'OFF'}.`);
+        if (godMode) {
+            playerHealth = maxPlayerHealth; // Full health when God Mode is activated
+            updateHealthBars();
+        }
+    }
+
+    /**
+     * Handles the hatching of the dragon egg.
+     */
+    function hatchDragon() {
+        if (!dragonHatched) {
+            dragonHatched = true;
+            dragonEgg.style.display = 'none'; // Hide the egg
+            dragonStats.style.display = 'flex'; // Show dragon stats
+            displayMessage("The dragon egg hatched! Meet Diamond (🐉)! She will fight alongside you.");
+        }
+    }
+
+    /**
+     * Opens the shop modal.
+     */
+    function openShop() {
+        shopContainer.style.display = 'flex'; // Show shop modal
+        updateShop(); // Populate shop items
+    }
+
+    /**
+     * Closes the shop modal.
+     */
+    function closeShop() {
+        shopContainer.style.display = 'none'; // Hide shop modal
+    }
+
+    /**
+     * Populates and updates the shop items based on coins and owned swords.
+     */
+    function updateShop() {
+        shopCoinsDisplay.textContent = coins;
+        shopItemsContainer.innerHTML = ''; // Clear existing items
+
+        // Loop through all defined swords
+        for (const swordName in swords) {
+            const sword = swords[swordName];
+            if (swordName === "Basic Sword") continue; // Basic sword is always owned and not sold in shop
+
+            const button = document.createElement('button');
+            button.textContent = `${swordName} (Damage: ${sword.damage}, Cost: ${sword.cost} coins)`;
+
+            if (ownedSwords[swordName]) {
+                // If sword is already owned
+                button.disabled = true;
+                button.textContent += " (Owned)";
+            } else if (coins >= sword.cost) {
+                // If player has enough coins to buy
+                button.onclick = () => buySword(swordName, sword.cost);
+            } else {
+                // If not enough coins
+                button.disabled = true;
+            }
+            shopItemsContainer.appendChild(button);
+        }
+    }
+
+    /**
+     * Handles the purchase of a sword from the shop.
+     * @param {string} swordName - The name of the sword to buy.
+     * @param {number} cost - The cost of the sword.
+     */
+    function buySword(swordName, cost) {
+        if (coins >= cost && !ownedSwords[swordName]) {
+            coins -= cost;
+            ownedSwords[swordName] = true;
+            updateCoinsDisplay();
+            updateShop(); // Re-render shop to update button states
+            displayMessage(`You bought the ${swordName}!`);
+            updateInventory(); // Update inventory to reflect new sword
+        } else {
+            displayMessage("Not enough coins or you already own this sword!");
+        }
+    }
+
+    /**
+     * Opens the inventory modal.
+     */
+    function openInventory() {
+        inventoryContainer.style.display = 'flex'; // Show inventory modal
+        updateInventory(); // Populate inventory items
+    }
+
+    /**
+     * Closes the inventory modal.
+     */
+    function closeInventory() {
+        inventoryContainer.style.display = 'none'; // Hide inventory modal
+    }
+
+    /**
+     * Populates and updates the inventory items.
+     */
+    function updateInventory() {
+        inventoryCurrentSwordDisplay.textContent = currentSword;
+        inventoryItemsContainer.innerHTML = ''; // Clear existing items
+
+        // Loop through all swords the player owns
+        for (const swordName in ownedSwords) {
+            if (ownedSwords[swordName]) {
+                const button = document.createElement('button');
+                button.textContent = `${swordName} (Damage: ${swords[swordName].damage})`;
+                if (swordName === currentSword) {
+                    // If this sword is currently equipped
+                    button.disabled = true;
+                    button.textContent += " (Equipped)";
+                } else {
+                    // Allow equipping if not currently equipped
+                    button.onclick = () => equipSword(swordName);
+                }
+                inventoryItemsContainer.appendChild(button);
+            }
+        }
+    }
+
+    /**
+     * Equips a selected sword.
+     * @param {string} swordName - The name of the sword to equip.
+     */
+    function equipSword(swordName) {
+        currentSword = swordName; // Set new current sword
+        playerDamage = swords[currentSword].damage; // Update player's damage
+        currentSwordNameDisplay.textContent = currentSword; // Update displayed sword name
+        displayMessage(`You equipped the ${currentSword}!`);
+        updateInventory(); // Re-render inventory to show new equipped status
+    }
+
+    // --- Initial game setup on load ---
+    window.onload = function() {
+        // Generate initial demon stats before first update
+        generateDemonStats();
+
+        // Initial updates for all displays
+        updateHealthBars();
+        updateCoinsDisplay();
+        updateLevelDisplay();
+        displayMessage("Welcome to Demon Killer! Attack or Heal to start your adventure.");
+
+        // Add event listener for dragon egg click
+        // IMPORTANT: Replace 'https://placehold.co/200x200/555555/FFFFFF?text=Dragon+Egg' with your actual image URL!
+        dragonEgg.addEventListener('click', hatchDragon);
+    };
+</script>
+
+</body>
+</html>
